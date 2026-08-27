@@ -1,33 +1,22 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+import { trpc } from "@/lib/trpc";
+import { formatCurrency, formatDate, priorityClass, priorityLabels, stageLabels, supplyChainLabels } from "@/lib/monitor";
+import { ArrowUpRight, Building2, CalendarClock, CircleAlert, FileText, Loader2, MapPin, Network, Radar, Sparkles } from "lucide-react";
+import { useLocation } from "wouter";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
+const statCards = [
+  { key: "companies", label: "目標企業", icon: Building2, tone: "cyan" }, { key: "facilities", label: "廠區／機房", icon: MapPin, tone: "orange" }, { key: "opportunities", label: "追蹤商機", icon: Radar, tone: "cyan" }, { key: "highPriority", label: "高優先行動", icon: CircleAlert, tone: "orange" },
+] as const;
+
+function DistributionBar({ title, values, labels }: { title: string; values: Record<string, number>; labels: Record<string, string> }) { const total = Object.values(values).reduce((sum, value) => sum + value, 0); return <section className="glass-panel card-lift rounded-2xl p-5"><div className="mb-5 flex items-center justify-between"><h2 className="text-sm font-semibold text-white">{title}</h2><span className="text-xs text-white/45">{total} 筆</span></div>{total ? <div className="space-y-3">{Object.entries(values).map(([key, value]) => <div key={key}><div className="mb-1.5 flex justify-between text-xs"><span className="text-white/63">{labels[key] || key}</span><span className="font-medium text-white">{value}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/7"><div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-orange-300" style={{ width: `${Math.max((value / total) * 100, 5)}%` }}/></div></div>)}</div> : <p className="py-8 text-sm leading-6 text-white/42">尚未匯入資料。建立供應鏈企業與商機後，系統將自動彙整分布。</p>}</section>; }
+
 export default function Home() {
-  // The useAuth hook provides authentication state.
-  // To implement login/logout, call logout(), or start login from an event
-  // handler: onClick={() => startLogin()} (imported from "@/const"). Never call
-  // startLogin() during render (no href={startLogin()}) — it mints a one-time
-  // nonce cookie and must run only at the moment of navigation.
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
-
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
-  );
+  const dashboard = trpc.monitor.dashboard.useQuery(); const [, navigate] = useLocation(); const snapshot = dashboard.data;
+  if (dashboard.isLoading) return <div className="grid min-h-[65vh] place-items-center"><Loader2 className="h-7 w-7 animate-spin text-cyan-200" /></div>;
+  return <div className="relative mx-auto max-w-[1540px] pb-10"><header className="relative overflow-hidden rounded-[1.6rem] border border-cyan-100/14 bg-gradient-to-br from-[#10423f]/90 via-[#0b2928]/95 to-[#281914]/92 p-6 shadow-2xl shadow-black/20 sm:p-9"><div className="topographic-line absolute inset-0 opacity-65"/><div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"><div><div className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-orange-200"><span className="orange-orb h-2 w-2 rounded-full bg-orange-300"/> INTELLIGENCE COMMAND CENTER</div><h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">讓半導體供應鏈的<br/><span className="text-cyan-100">每一個連線訊號</span>成為行動。</h1><p className="mt-5 max-w-2xl text-sm leading-7 text-white/63 sm:text-base">集中檢視台灣半導體上、中、下游企業、廠區機房與電路網路需求，以可驗證來源推進銷售機會。</p></div><div className="flex shrink-0 flex-wrap gap-3"><Button onClick={() => navigate("/companies")} className="h-11 rounded-xl bg-orange-300 px-5 text-[#08211e] hover:bg-orange-200"><Building2 className="mr-2 h-4 w-4"/>建立企業</Button><Button variant="outline" onClick={() => navigate("/opportunities")} className="h-11 rounded-xl border-cyan-100/25 bg-cyan-100/8 px-5 text-cyan-50 hover:bg-cyan-100/15 hover:text-white"><Radar className="mr-2 h-4 w-4"/>建立商機</Button></div></div></header>
+    <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{statCards.map(card => { const Icon = card.icon; const count = snapshot?.stats[card.key] ?? 0; return <article className="glass-panel card-lift rounded-2xl p-5" key={card.key}><div className="flex items-start justify-between"><div><p className="text-xs font-medium tracking-wide text-white/52">{card.label}</p><p className="mt-3 text-3xl font-semibold tracking-tight text-white">{count.toLocaleString("zh-TW")}</p></div><div className={`grid h-10 w-10 place-items-center rounded-xl border ${card.tone === "orange" ? "border-orange-200/20 bg-orange-300/11 text-orange-100" : "border-cyan-100/20 bg-cyan-200/10 text-cyan-100"}`}><Icon className="h-5 w-5"/></div></div><p className="mt-4 text-xs text-white/38">從已建立且可追溯的資料即時彙整</p></article>; })}</section>
+    <section className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_0.9fr]"><article className="glass-panel card-lift overflow-hidden rounded-2xl"><div className="flex items-start justify-between border-b border-white/8 px-5 py-5 sm:px-6"><div><p className="text-xs font-semibold tracking-[0.16em] text-cyan-100/62">ACTION QUEUE</p><h2 className="mt-1 text-lg font-semibold text-white">近期推進行動</h2></div><Button variant="ghost" onClick={() => navigate("/opportunities")} className="text-xs text-orange-100 hover:bg-orange-300/10 hover:text-orange-50">檢視全部 <ArrowUpRight className="ml-1 h-3.5 w-3.5"/></Button></div>{snapshot?.actionQueue?.length ? <div className="divide-y divide-white/7">{snapshot.actionQueue.map(item => <button key={item.id} onClick={() => navigate("/opportunities")} className="group flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-white/[0.035] sm:px-6"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-100/9 text-cyan-100"><Network className="h-4 w-4"/></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{item.title}</p><p className="mt-1 truncate text-xs text-white/47">{item.company?.name || "未對應企業"} · {item.nextAction || "尚未設定下一步"}</p></div><div className="text-right"><span className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] ${priorityClass(item.priority)}`}>{priorityLabels[item.priority]}</span><p className="mt-1.5 text-[11px] text-white/43">{formatDate(item.nextActionDue)}</p></div></button>)}</div> : <div className="px-6 py-14"><div className="flex max-w-md items-start gap-4"><div className="cyan-orb grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-200/10"><Sparkles className="h-4 w-4 text-cyan-100"/></div><div><h3 className="font-medium text-white">從關鍵訊號開始建立行動隊列</h3><p className="mt-2 text-sm leading-6 text-white/46">將公開建廠、擴產、雲端、資安或跨廠資料流證據連結至商機，再設定下一步與日期。</p></div></div></div>}</article>
+      <article className="glass-panel card-lift topographic-line rounded-2xl p-6"><div className="relative"><div className="flex items-start justify-between"><div><p className="text-xs font-semibold tracking-[0.16em] text-orange-200/75">WEEKLY SIGNAL BRIEF</p><h2 className="mt-1 text-lg font-semibold text-white">最新週報</h2></div><FileText className="h-5 w-5 text-orange-200"/></div>{snapshot?.latestReport ? <><p className="mt-6 text-sm font-medium leading-6 text-white">{snapshot.latestReport.title}</p><p className="mt-3 line-clamp-4 text-sm leading-6 text-white/53">{snapshot.latestReport.summary}</p><Button variant="ghost" onClick={() => navigate("/reports")} className="mt-4 px-0 text-xs text-cyan-100 hover:bg-transparent hover:text-white">開啟完整週報 <ArrowUpRight className="ml-1 h-3.5 w-3.5"/></Button></> : <><p className="mt-6 text-sm leading-6 text-white/52">每週一上午，系統將透過公開來源收斂新建、擴產、雲端、資安與跨境連線等訊號，產出可覆核的商機週報。</p><div className="mt-6 flex items-center gap-3 text-xs text-cyan-100"><CalendarClock className="h-4 w-4"/> 預設更新：每週一 09:00（台灣時間）</div></>}</div></article></section>
+    <section className="mt-5 grid gap-5 lg:grid-cols-3"><DistributionBar title="商機銷售階段" values={snapshot?.distributions.stage ?? {}} labels={stageLabels}/><DistributionBar title="供應鏈分布" values={snapshot?.distributions.supplyChain ?? {}} labels={supplyChainLabels}/><DistributionBar title="商機優先級" values={snapshot?.distributions.priority ?? {}} labels={priorityLabels}/></section>
+  </div>;
 }

@@ -16,6 +16,8 @@ export const companies = mysqlTable("companies", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
   supplyChainStage: mysqlEnum("supplyChainStage", ["upstream", "midstream", "downstream"]).notNull(),
+  subCategory: varchar("subCategory", { length: 160 }),
+  ticker: varchar("ticker", { length: 20 }),
   region: varchar("region", { length: 120 }).notNull(),
   city: varchar("city", { length: 120 }),
   status: mysqlEnum("status", ["verified", "review", "nurture"]).default("review").notNull(),
@@ -27,6 +29,7 @@ export const companies = mysqlTable("companies", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [
   index("companies_stage_region_idx").on(table.supplyChainStage, table.region),
+  index("companies_stage_subcategory_idx").on(table.supplyChainStage, table.subCategory),
   index("companies_priority_idx").on(table.priority),
 ]);
 
@@ -168,3 +171,4 @@ export const notificationLogs = mysqlTable("notificationLogs", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type Company = typeof companies.$inferSelect;

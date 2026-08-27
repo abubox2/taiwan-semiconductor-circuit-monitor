@@ -47,16 +47,28 @@ function emptyToNull(value: string | undefined) {
   return value?.trim() ? value.trim() : null;
 }
 
-export async function listCompanies(filters?: { search?: string; stage?: string; region?: string }) {
-  const db = await requireDb();
-  const rows = await db.select().from(companies).orderBy(desc(companies.updatedAt));
+export function countSupplyChainDistribution(rows: Array<{ supplyChainStage: string }>) {
+  return rows.reduce<Record<string, number>>((distribution, row) => {
+    distribution[row.supplyChainStage] = (distribution[row.supplyChainStage] ?? 0) + 1;
+    return distribution;
+  }, {});
+}
+
+export function filterCompanyRows<T extends { name: string; region: string; city: string | null; subCategory: string | null; ticker: string | null; description: string | null; supplyChainStage: string }>(rows: T[], filters?: { search?: string; stage?: string; subCategory?: string; region?: string }) {
   const search = filters?.search?.trim().toLowerCase();
   return rows.filter(row => {
-    const matchesSearch = !search || [row.name, row.region, row.city, row.description].filter(Boolean).join(" ").toLowerCase().includes(search);
+    const matchesSearch = !search || [row.name, row.region, row.city, row.subCategory, row.ticker, row.description].filter(Boolean).join(" ").toLowerCase().includes(search);
     const matchesStage = !filters?.stage || row.supplyChainStage === filters.stage;
+    const matchesSubCategory = !filters?.subCategory || row.subCategory === filters.subCategory;
     const matchesRegion = !filters?.region || row.region === filters.region;
-    return matchesSearch && matchesStage && matchesRegion;
+    return matchesSearch && matchesStage && matchesSubCategory && matchesRegion;
   });
+}
+
+export async function listCompanies(filters?: { search?: string; stage?: string; subCategory?: string; region?: string }) {
+  const db = await requireDb();
+  const rows = await db.select().from(companies).orderBy(desc(companies.updatedAt));
+  return filterCompanyRows(rows, filters);
 }
 
 export async function createCompany(input: CompanyInput) {
@@ -258,7 +270,11 @@ export async function getDashboardSnapshot() {
   const [companyRows, facilityRows, opportunityRows, sourceRows, reportRows, notifications] = await Promise.all([
     db.select().from(companies), db.select().from(facilities), db.select().from(opportunities), db.select().from(evidenceSources), db.select().from(weeklyReports).orderBy(desc(weeklyReports.periodStart)).limit(1), db.select().from(notificationLogs).orderBy(desc(notificationLogs.createdAt)).limit(6),
   ]);
-  const countBy = <T extends Record<string, unknown>>(rows: T[], key: keyof T) => rows.reduce<Record<string, number>>((accumulator, row) => {
+  return buildDashboardSnapshot({ companyRows, facilityRows, opportunityRows, sourceRows, reportRows, notifications });
+}
+
+export function buildDashboardSnapshot({ companyRows, facilityRows, opportunityRows, sourceRows, reportRows, notifications }: { companyRows: any[]; facilityRows: any[]; opportunityRows: any[]; sourceRows: any[]; reportRows: any[]; notifications: any[] }) {
+  const countBy = (rows: any[], key: string) => rows.reduce<Record<string, number>>((accumulator, row) => {
     const value = String(row[key]);
     accumulator[value] = (accumulator[value] ?? 0) + 1;
     return accumulator;
@@ -269,7 +285,7 @@ export async function getDashboardSnapshot() {
   const actionQueue = opportunityRows.filter(row => row.nextActionDue && row.nextActionDue <= soon && !["won", "lost"].includes(row.stage)).sort((a, b) => (a.nextActionDue?.getTime() ?? 0) - (b.nextActionDue?.getTime() ?? 0)).slice(0, 6).map(row => ({ ...row, company: companyById.get(row.companyId) ?? null }));
   return {
     stats: { companies: companyRows.length, facilities: facilityRows.length, opportunities: opportunityRows.length, highPriority: opportunityRows.filter(row => ["critical", "high"].includes(row.priority)).length, sources: sourceRows.length },
-    distributions: { stage: countBy(opportunityRows, "stage"), priority: countBy(opportunityRows, "priority"), supplyChain: countBy(companyRows, "supplyChainStage") },
+    distributions: { stage: countBy(opportunityRows, "stage"), priority: countBy(opportunityRows, "priority"), supplyChain: countSupplyChainDistribution(companyRows) },
     actionQueue,
     latestReport: reportRows[0] ?? null,
     notifications,

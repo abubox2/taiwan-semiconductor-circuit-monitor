@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
 const mockedDb = vi.hoisted(() => ({
-  createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(),
+  getDashboardSnapshot: vi.fn(), listCompanies: vi.fn(), createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(),
 }));
 
 vi.mock("./monitoringDb", () => mockedDb);
@@ -58,5 +58,19 @@ describe("monitor router", () => {
     mockedDb.geocodeFacility.mockRejectedValueOnce(new Error("請先填入可核對的據點地址，再進行地圖定位。"));
     const monitor = appRouter.createCaller(context()).monitor;
     await expect(monitor.geocodeFacility({ id: 1 })).rejects.toThrow("請先填入可核對的據點地址");
+  });
+
+  it("將供應鏈細分類篩選轉交企業清單查詢", async () => {
+    mockedDb.listCompanies.mockResolvedValueOnce([]);
+    const monitor = appRouter.createCaller(context()).monitor;
+    await monitor.listCompanies({ stage: "upstream", subCategory: "矽晶圓", region: "新竹" });
+    expect(mockedDb.listCompanies).toHaveBeenCalledWith({ stage: "upstream", subCategory: "矽晶圓", region: "新竹" });
+  });
+
+  it("將首頁儀表板查詢轉交快照資料服務", async () => {
+    const snapshot = { stats: { companies: 244 }, distributions: { supplyChain: { upstream: 59, midstream: 147, downstream: 38 } } };
+    mockedDb.getDashboardSnapshot.mockResolvedValueOnce(snapshot);
+    await expect(appRouter.createCaller(context()).monitor.dashboard()).resolves.toEqual(snapshot);
+    expect(mockedDb.getDashboardSnapshot).toHaveBeenCalledOnce();
   });
 });

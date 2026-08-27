@@ -55,4 +55,9 @@ describe("半導體商機監控資料契約", () => {
   it("限制企業評分介於零至一百分", () => {
     expect(() => companyInputSchema.parse({ name: "評分測試企業", supplyChainStage: "downstream", region: "台北", status: "review", priority: "medium", score: 101 })).toThrow();
   });
+
+  it("接受供應鏈細分類與股票代碼", () => {
+    const company = companyInputSchema.parse({ name: "分類測試企業", supplyChainStage: "upstream", subCategory: "矽晶圓", ticker: "6488", region: "新竹", status: "review", priority: "low", score: 25 });
+    expect(company).toMatchObject({ subCategory: "矽晶圓", ticker: "6488" });
+  });
 });

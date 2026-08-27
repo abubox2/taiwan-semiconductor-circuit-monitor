@@ -16,7 +16,7 @@ const optionalFilterText = z.string().trim().max(120).optional();
 
 export const monitorRouter = router({
   dashboard: protectedProcedure.query(() => db.getDashboardSnapshot()),
-  listCompanies: protectedProcedure.input(z.object({ search: optionalFilterText, stage: optionalFilterText, region: optionalFilterText }).optional()).query(({ input }) => db.listCompanies(input)),
+  listCompanies: protectedProcedure.input(z.object({ search: optionalFilterText, stage: optionalFilterText, subCategory: optionalFilterText, region: optionalFilterText }).optional()).query(({ input }) => db.listCompanies(input)),
   createCompany: protectedProcedure.input(companyInputSchema).mutation(({ input }) => db.createCompany(input)),
   updateCompany: protectedProcedure.input(z.object({ id: z.number().int().positive(), data: companyInputSchema })).mutation(({ input }) => db.updateCompany(input.id, input.data)),
   listFacilities: protectedProcedure.query(() => db.listFacilities()),

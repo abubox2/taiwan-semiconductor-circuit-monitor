@@ -9,6 +9,8 @@ const optionalText = (max = 1000) => z.string().trim().max(max).optional().trans
 export const companyInputSchema = z.object({
   name: z.string().trim().min(2).max(255),
   supplyChainStage: z.enum(supplyChainStages),
+  subCategory: optionalText(160),
+  ticker: optionalText(20),
   region: z.string().trim().min(1).max(120),
   city: optionalText(120),
   status: z.enum(["verified", "review", "nurture"]),

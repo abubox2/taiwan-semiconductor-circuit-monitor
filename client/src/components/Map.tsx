@@ -76,7 +76,7 @@
 
 /// <reference types="@types/google.maps" />
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePersistFn } from "@/hooks/usePersistFn";
 import { cn } from "@/lib/utils";
 
@@ -92,18 +92,28 @@ const FORGE_BASE_URL =
   "https://forge.butterfly-effect.dev";
 const MAPS_PROXY_URL = `${FORGE_BASE_URL}/v1/maps/proxy`;
 
-function loadMapScript() {
-  return new Promise(resolve => {
+function loadMapScript(): Promise<void> {
+  if (window.google?.maps) return Promise.resolve();
+  const existing = document.getElementById("semiconnect-google-maps");
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Google Maps 載入失敗")), { once: true });
+    });
+  }
+  return new Promise((resolve, reject) => {
     const script = document.createElement("script");
+    script.id = "semiconnect-google-maps";
     script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
     script.async = true;
     script.crossOrigin = "anonymous";
     script.onload = () => {
-      resolve(null);
-      script.remove(); // Clean up immediately
+      if (window.google?.maps) resolve();
+      else reject(new Error("Google Maps 指令碼未提供地圖服務"));
     };
     script.onerror = () => {
-      console.error("Failed to load Google Maps script");
+      script.remove();
+      reject(new Error("Google Maps 載入失敗"));
     };
     document.head.appendChild(script);
   });
@@ -114,6 +124,7 @@ interface MapViewProps {
   initialCenter?: google.maps.LatLngLiteral;
   initialZoom?: number;
   onMapReady?: (map: google.maps.Map) => void;
+  onMapError?: (message: string) => void;
 }
 
 export function MapView({
@@ -121,27 +132,32 @@ export function MapView({
   initialCenter = { lat: 37.7749, lng: -122.4194 },
   initialZoom = 12,
   onMapReady,
+  onMapError,
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const init = usePersistFn(async () => {
-    await loadMapScript();
-    if (!mapContainer.current) {
-      console.error("Map container not found");
-      return;
-    }
-    map.current = new window.google.maps.Map(mapContainer.current, {
-      zoom: initialZoom,
-      center: initialCenter,
-      mapTypeControl: true,
-      fullscreenControl: true,
-      zoomControl: true,
-      streetViewControl: true,
-      mapId: "DEMO_MAP_ID",
-    });
-    if (onMapReady) {
-      onMapReady(map.current);
+    try {
+      await loadMapScript();
+      if (!mapContainer.current) return;
+      if (!window.google?.maps) throw new Error("地圖服務尚未就緒");
+      map.current = new window.google.maps.Map(mapContainer.current, {
+        zoom: initialZoom,
+        center: initialCenter,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        zoomControl: true,
+        streetViewControl: true,
+        mapId: "DEMO_MAP_ID",
+      });
+      onMapReady?.(map.current);
+    } catch (error) {
+      const message = "地圖服務目前無法載入；請改用下方已定位據點與區域摘要進行分析。";
+      setLoadError(message);
+      onMapError?.(message);
+      console.warn("Map fallback enabled", error);
     }
   });
 
@@ -149,7 +165,6 @@ export function MapView({
     init();
   }, [init]);
 
-  return (
-    <div ref={mapContainer} className={cn("w-full h-[500px]", className)} />
-  );
+  if (loadError) return <div className={cn("grid h-[500px] place-items-center rounded-2xl border border-cyan-100/15 bg-[#061817] p-8 text-center", className)} role="status"><div><p className="text-sm font-semibold text-cyan-50">地圖備援檢視</p><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-cyan-100/60">{loadError}</p><p className="mt-4 text-xs text-orange-100/75">已儲存的經緯度、地區篩選與據點清單仍可於本頁使用。</p></div></div>;
+  return <div ref={mapContainer} className={cn("h-[500px] w-full", className)} aria-label="企業廠區與機房據點地圖" />;
 }

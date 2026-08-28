@@ -1,0 +1,39 @@
+{
+  "validatedBy": "monitoringMapLocations.integration.test.ts",
+  "validatedAt": "2026-08-28T04:43:51.059Z",
+  "dataService": "getMapLocations",
+  "locations": [
+    {
+      "id": 2,
+      "companyId": 2,
+      "name": "晶圓十八廠",
+      "facilityType": "fab",
+      "region": "南部科學園區",
+      "city": "台南市",
+      "address": "745-093 南部科學園區北園二路8號",
+      "latitude": "23.1163159",
+      "longitude": "120.2641416",
+      "operationalStatus": "expansion",
+      "notes": "依公司公告，為 5 奈米與 3 奈米製程技術的超大晶圓廠；勿據此推定任何實際線路。",
+      "createdAt": "2026-08-27T17:44:45.000Z",
+      "updatedAt": "2026-08-27T17:55:28.000Z",
+      "company": {
+        "id": 2,
+        "name": "台灣積體電路製造股份有限公司",
+        "supplyChainStage": "midstream",
+        "subCategory": "晶圓代工",
+        "ticker": "2330",
+        "region": "新竹",
+        "city": "新竹",
+        "status": "verified",
+        "priority": "high",
+        "score": 78,
+        "website": "https://www.tsmc.com",
+        "description": "依臺灣證券交易所公開上市公司資料之半導體業分類納入；細分類依公開產業角色整理。轉列重點商機前，仍須補入企業專屬公開證據。",
+        "createdAt": "2026-08-27T17:44:44.000Z",
+        "updatedAt": "2026-08-27T23:06:06.000Z"
+      },
+      "requirements": []
+    }
+  ]
+}

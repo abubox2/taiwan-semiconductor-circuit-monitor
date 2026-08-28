@@ -7,7 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import CompanyDirectoryPage from "./pages/CompanyDirectoryPage";
 import DataWorkbenchPage from "./pages/DataWorkbenchPage";
-import { CompaniesPage, EvidencePage, FacilitiesPage, NetworkMapPage, OpportunitiesPage, ReportsPage, SignalsPage } from "./pages/MonitorPages";
+import { CompaniesPage, EvidencePage, FacilitiesPage, OpportunitiesPage, ReportsPage, SignalsPage } from "./pages/MonitorPages";
+import NetworkMapPage from "./pages/NetworkMapPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 

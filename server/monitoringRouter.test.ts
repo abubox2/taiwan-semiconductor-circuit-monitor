@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
 const mockedDb = vi.hoisted(() => ({
-  getDashboardSnapshot: vi.fn(), listCompanies: vi.fn(), createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(),
+  getDashboardSnapshot: vi.fn(), getMapLocations: vi.fn(), listCompanies: vi.fn(), createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(),
 }));
 
 vi.mock("./monitoringDb", () => mockedDb);
@@ -72,5 +72,12 @@ describe("monitor router", () => {
     mockedDb.getDashboardSnapshot.mockResolvedValueOnce(snapshot);
     await expect(appRouter.createCaller(context()).monitor.dashboard()).resolves.toEqual(snapshot);
     expect(mockedDb.getDashboardSnapshot).toHaveBeenCalledOnce();
+  });
+
+  it("回傳具有公開座標的廠區位置供地圖與備援清單使用", async () => {
+    const locations = [{ id: 2, name: "晶圓十八廠", region: "南部科學園區", city: "台南市", latitude: "23.1163159", longitude: "120.2641416", company: { name: "台灣積體電路製造股份有限公司" }, requirements: [] }];
+    mockedDb.getMapLocations.mockResolvedValueOnce(locations);
+    await expect(appRouter.createCaller(context()).monitor.mapLocations()).resolves.toEqual(locations);
+    expect(mockedDb.getMapLocations).toHaveBeenCalledOnce();
   });
 });

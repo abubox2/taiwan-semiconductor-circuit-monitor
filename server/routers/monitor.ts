@@ -42,4 +42,6 @@ export const monitorRouter = router({
   updateReport: protectedProcedure.input(z.object({ id: z.number().int().positive(), data: reportInputSchema })).mutation(({ input }) => db.updateReport(input.id, input.data)),
   mapLocations: protectedProcedure.query(() => db.getMapLocations()),
   monitorSettings: protectedProcedure.query(() => db.listMonitorSettings()),
+  scheduleRuns: protectedProcedure.query(() => db.listScheduleRuns()),
+  updateMonitorSettings: protectedProcedure.input(z.object({ recipientName: z.string().trim().max(160).optional() })).mutation(({ input }) => db.updateMonitorSettings(input)),
 });

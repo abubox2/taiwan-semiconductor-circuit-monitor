@@ -9,6 +9,7 @@ import {
   networkRequirements,
   notificationLogs,
   opportunities,
+  scheduleRuns,
   weeklyReports,
 } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -45,6 +46,12 @@ async function requireDb() {
 
 function emptyToNull(value: string | undefined) {
   return value?.trim() ? value.trim() : null;
+}
+
+export function taipeiDayStart(now: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const get = (type: string) => parts.find(part => part.type === type)?.value ?? "";
+  return new Date(`${get("year")}-${get("month")}-${get("day")}T00:00:00+08:00`);
 }
 
 export function countSupplyChainDistribution(rows: Array<{ supplyChainStage: string }>) {
@@ -351,12 +358,14 @@ export async function geocodeFacility(id: number) {
 async function recordPriorityNotification(opportunity: typeof opportunities.$inferSelect, notificationType: "priority_created" | "stage_changed" | "action_due", title: string) {
   const db = await requireDb();
   const company = (await db.select().from(companies).where(eq(companies.id, opportunity.companyId)).limit(1))[0];
+  const setting = await listMonitorSettings();
+  const recipientName = setting?.recipientName?.trim() || "專案擁有者";
   const message = `${company?.name || "未對應企業"}｜${opportunity.title}｜${opportunity.nextAction || "請確認下一步行動"}`;
-  const delivered = await notifyOwner({ title, content: message });
+  const delivered = await notifyOwner({ title: recipientName === "專案擁有者" ? title : `${title}｜指定：${recipientName}`, content: message });
   await db.insert(notificationLogs).values({
     opportunityId: opportunity.id,
     notificationType,
-    recipientName: "專案擁有者",
+    recipientName,
     deliveredAt: delivered ? new Date() : null,
     status: delivered ? "delivered" : "failed",
     message,
@@ -366,6 +375,39 @@ async function recordPriorityNotification(opportunity: typeof opportunities.$inf
 export async function listMonitorSettings() {
   const db = await requireDb();
   return (await db.select().from(monitorSettings).limit(1))[0] ?? null;
+}
+
+export async function listScheduleRuns() {
+  const db = await requireDb();
+  return db.select().from(scheduleRuns).orderBy(desc(scheduleRuns.startedAt)).limit(12);
+}
+
+export async function startScheduleRun(jobType: "weekly_research" | "due_actions", taskUid: string) {
+  const db = await requireDb();
+  const result = await db.insert(scheduleRuns).values({ jobType, taskUid, status: "running" });
+  return Number(result[0].insertId);
+}
+
+export async function completeScheduleRun(id: number, input: { status: "success" | "skipped"; reportId?: number | null; sourceCount?: number; opportunityCount?: number; message?: string }) {
+  const db = await requireDb();
+  await db.update(scheduleRuns).set({ status: input.status, reportId: input.reportId ?? null, sourceCount: input.sourceCount ?? 0, opportunityCount: input.opportunityCount ?? 0, message: emptyToNull(input.message), completedAt: new Date() }).where(eq(scheduleRuns.id, id));
+}
+
+export async function failScheduleRun(id: number, message: string) {
+  const db = await requireDb();
+  await db.update(scheduleRuns).set({ status: "failed", message: message.slice(0, 5000), completedAt: new Date() }).where(eq(scheduleRuns.id, id));
+}
+
+export async function updateMonitorSettings(input: { recipientName?: string }) {
+  const db = await requireDb();
+  const current = await listMonitorSettings();
+  if (current) {
+    await db.update(monitorSettings).set({ recipientName: emptyToNull(input.recipientName) }).where(eq(monitorSettings.id, current.id));
+    return (await db.select().from(monitorSettings).where(eq(monitorSettings.id, current.id)).limit(1))[0];
+  }
+  const result = await db.insert(monitorSettings).values({ recipientName: emptyToNull(input.recipientName) });
+  const id = Number(result[0].insertId);
+  return (await db.select().from(monitorSettings).where(eq(monitorSettings.id, id)).limit(1))[0];
 }
 
 export async function configureMonitorSchedule(taskUid: string, nextRunAt?: Date | null) {
@@ -439,9 +481,8 @@ export async function notifyDueOpportunities(taskUid: string) {
   const setting = await listMonitorSettings();
   if (!setting) return { ok: true, skipped: "schedule_not_configured" as const };
   if (!setting.scheduleEnabled) return { ok: true, skipped: "schedule_disabled" as const };
-  if (setting.scheduleCronTaskUid && setting.scheduleCronTaskUid !== taskUid) return { ok: true, skipped: "different_schedule" as const };
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  if (setting.dueActionCronTaskUid && setting.dueActionCronTaskUid !== taskUid) return { ok: true, skipped: "different_schedule" as const };
+  const today = taipeiDayStart();
   const dueItems = await db.select().from(opportunities).where(lte(opportunities.nextActionDue, new Date()));
   const eligible = dueItems.filter(item => ["critical", "high"].includes(item.priority) && !["won", "lost"].includes(item.stage));
   let notified = 0;

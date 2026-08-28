@@ -1,0 +1,1242 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "212987e1-6c41-432c-bf09-284fec176bcc",
+  "prevId": "e9c2bd6e-f02e-4389-942e-3712f605e0a8",
+  "tables": {
+    "companies": {
+      "name": "companies",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "supplyChainStage": {
+          "name": "supplyChainStage",
+          "type": "enum('upstream','midstream','downstream')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subCategory": {
+          "name": "subCategory",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ticker": {
+          "name": "ticker",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "region": {
+          "name": "region",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('verified','review','nurture')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'review'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "enum('critical','high','medium','low')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'medium'"
+        },
+        "score": {
+          "name": "score",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "website": {
+          "name": "website",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "companies_stage_region_idx": {
+          "name": "companies_stage_region_idx",
+          "columns": [
+            "supplyChainStage",
+            "region"
+          ],
+          "isUnique": false
+        },
+        "companies_stage_subcategory_idx": {
+          "name": "companies_stage_subcategory_idx",
+          "columns": [
+            "supplyChainStage",
+            "subCategory"
+          ],
+          "isUnique": false
+        },
+        "companies_priority_idx": {
+          "name": "companies_priority_idx",
+          "columns": [
+            "priority"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "companies_id": {
+          "name": "companies_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "companies_name_unique": {
+          "name": "companies_name_unique",
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "contactLogs": {
+      "name": "contactLogs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opportunityId": {
+          "name": "opportunityId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contactId": {
+          "name": "contactId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "channel": {
+          "name": "channel",
+          "type": "enum('call','email','meeting','message','other')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contactedAt": {
+          "name": "contactedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nextStep": {
+          "name": "nextStep",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "contact_logs_company_idx": {
+          "name": "contact_logs_company_idx",
+          "columns": [
+            "companyId"
+          ],
+          "isUnique": false
+        },
+        "contact_logs_opportunity_idx": {
+          "name": "contact_logs_opportunity_idx",
+          "columns": [
+            "opportunityId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "contactLogs_id": {
+          "name": "contactLogs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "contacts": {
+      "name": "contacts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "jobTitle": {
+          "name": "jobTitle",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "department": {
+          "name": "department",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "profileUrl": {
+          "name": "profileUrl",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceNote": {
+          "name": "sourceNote",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "contacts_company_idx": {
+          "name": "contacts_company_idx",
+          "columns": [
+            "companyId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "contacts_id": {
+          "name": "contacts_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "evidenceSources": {
+      "name": "evidenceSources",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opportunityId": {
+          "name": "opportunityId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceType": {
+          "name": "sourceType",
+          "type": "enum('company','government','filing','media','industry','other')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quality": {
+          "name": "quality",
+          "type": "enum('primary','secondary','lead')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'secondary'"
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "publishedAt": {
+          "name": "publishedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "excerpt": {
+          "name": "excerpt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "evidence_company_idx": {
+          "name": "evidence_company_idx",
+          "columns": [
+            "companyId"
+          ],
+          "isUnique": false
+        },
+        "evidence_opportunity_idx": {
+          "name": "evidence_opportunity_idx",
+          "columns": [
+            "opportunityId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "evidenceSources_id": {
+          "name": "evidenceSources_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "facilities": {
+      "name": "facilities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "facilityType": {
+          "name": "facilityType",
+          "type": "enum('fab','datacenter','office','rd','warehouse','other')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "region": {
+          "name": "region",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "operationalStatus": {
+          "name": "operationalStatus",
+          "type": "enum('planning','construction','operational','expansion')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'planning'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "facilities_company_idx": {
+          "name": "facilities_company_idx",
+          "columns": [
+            "companyId"
+          ],
+          "isUnique": false
+        },
+        "facilities_region_city_idx": {
+          "name": "facilities_region_city_idx",
+          "columns": [
+            "region",
+            "city"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "facilities_id": {
+          "name": "facilities_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "monitorSettings": {
+      "name": "monitorSettings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "weeklyCron": {
+          "name": "weeklyCron",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0 0 1 * * 0'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Asia/Taipei'"
+        },
+        "scheduleCronTaskUid": {
+          "name": "scheduleCronTaskUid",
+          "type": "varchar(65)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dueActionCronTaskUid": {
+          "name": "dueActionCronTaskUid",
+          "type": "varchar(65)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scheduleEnabled": {
+          "name": "scheduleEnabled",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "recipientName": {
+          "name": "recipientName",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lastRunAt": {
+          "name": "lastRunAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nextRunAt": {
+          "name": "nextRunAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "monitor_settings_schedule_uid_idx": {
+          "name": "monitor_settings_schedule_uid_idx",
+          "columns": [
+            "scheduleCronTaskUid"
+          ],
+          "isUnique": false
+        },
+        "monitor_settings_due_action_uid_idx": {
+          "name": "monitor_settings_due_action_uid_idx",
+          "columns": [
+            "dueActionCronTaskUid"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "monitorSettings_id": {
+          "name": "monitorSettings_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "networkRequirements": {
+      "name": "networkRequirements",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "facilityId": {
+          "name": "facilityId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requirementType": {
+          "name": "requirementType",
+          "type": "enum('leased_line','dia','dci','cloud_connect','iepl_iplc','backup','network_equipment','other')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bandwidth": {
+          "name": "bandwidth",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "equipment": {
+          "name": "equipment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "estimatedTiming": {
+          "name": "estimatedTiming",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scale": {
+          "name": "scale",
+          "type": "enum('pilot','site','multi_site','enterprise')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'site'"
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "enum('verified','review','nurture')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'review'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "network_requirements_facility_idx": {
+          "name": "network_requirements_facility_idx",
+          "columns": [
+            "facilityId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "networkRequirements_id": {
+          "name": "networkRequirements_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "notificationLogs": {
+      "name": "notificationLogs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "opportunityId": {
+          "name": "opportunityId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notificationType": {
+          "name": "notificationType",
+          "type": "enum('priority_created','stage_changed','action_due')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipientName": {
+          "name": "recipientName",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deliveredAt": {
+          "name": "deliveredAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('pending','delivered','failed')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "notification_opportunity_idx": {
+          "name": "notification_opportunity_idx",
+          "columns": [
+            "opportunityId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "notificationLogs_id": {
+          "name": "notificationLogs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "opportunities": {
+      "name": "opportunities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "facilityId": {
+          "name": "facilityId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "enum('discovery','qualified','solution','proposal','negotiation','won','lost')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'discovery'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "enum('critical','high','medium','low')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'medium'"
+        },
+        "score": {
+          "name": "score",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "estimatedAmount": {
+          "name": "estimatedAmount",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nextAction": {
+          "name": "nextAction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nextActionDue": {
+          "name": "nextActionDue",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "serviceHypothesis": {
+          "name": "serviceHypothesis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "verificationQuestion": {
+          "name": "verificationQuestion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "opportunities_company_idx": {
+          "name": "opportunities_company_idx",
+          "columns": [
+            "companyId"
+          ],
+          "isUnique": false
+        },
+        "opportunities_stage_priority_idx": {
+          "name": "opportunities_stage_priority_idx",
+          "columns": [
+            "stage",
+            "priority"
+          ],
+          "isUnique": false
+        },
+        "opportunities_due_idx": {
+          "name": "opportunities_due_idx",
+          "columns": [
+            "nextActionDue"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "opportunities_id": {
+          "name": "opportunities_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "openId": {
+          "name": "openId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "loginMethod": {
+          "name": "loginMethod",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "enum('user','admin')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'user'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        },
+        "lastSignedIn": {
+          "name": "lastSignedIn",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "users_id": {
+          "name": "users_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "users_openId_unique": {
+          "name": "users_openId_unique",
+          "columns": [
+            "openId"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "weeklyReports": {
+      "name": "weeklyReports",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "periodStart": {
+          "name": "periodStart",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "periodEnd": {
+          "name": "periodEnd",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opportunityCount": {
+          "name": "opportunityCount",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "sourceCount": {
+          "name": "sourceCount",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('draft','published')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'draft'"
+        },
+        "generatedAt": {
+          "name": "generatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "weekly_reports_period_idx": {
+          "name": "weekly_reports_period_idx",
+          "columns": [
+            "periodStart"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "weeklyReports_id": {
+          "name": "weeklyReports_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}

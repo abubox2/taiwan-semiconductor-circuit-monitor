@@ -151,12 +151,26 @@ export const monitorSettings = mysqlTable("monitorSettings", {
   weeklyCron: varchar("weeklyCron", { length: 64 }).default("0 0 1 * * 0").notNull(),
   timezone: varchar("timezone", { length: 64 }).default("Asia/Taipei").notNull(),
   scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  dueActionCronTaskUid: varchar("dueActionCronTaskUid", { length: 65 }),
   scheduleEnabled: int("scheduleEnabled").default(0).notNull(),
   recipientName: varchar("recipientName", { length: 160 }),
   lastRunAt: timestamp("lastRunAt"),
   nextRunAt: timestamp("nextRunAt"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, table => [index("monitor_settings_schedule_uid_idx").on(table.scheduleCronTaskUid)]);
+}, table => [index("monitor_settings_schedule_uid_idx").on(table.scheduleCronTaskUid), index("monitor_settings_due_action_uid_idx").on(table.dueActionCronTaskUid)]);
+
+export const scheduleRuns = mysqlTable("scheduleRuns", {
+  id: int("id").autoincrement().primaryKey(),
+  jobType: mysqlEnum("jobType", ["weekly_research", "due_actions"]).notNull(),
+  taskUid: varchar("taskUid", { length: 65 }).notNull(),
+  status: mysqlEnum("status", ["running", "success", "skipped", "failed"]).default("running").notNull(),
+  reportId: int("reportId"),
+  sourceCount: int("sourceCount").default(0).notNull(),
+  opportunityCount: int("opportunityCount").default(0).notNull(),
+  message: text("message"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, table => [index("schedule_runs_task_idx").on(table.taskUid), index("schedule_runs_type_started_idx").on(table.jobType, table.startedAt)]);
 
 export const notificationLogs = mysqlTable("notificationLogs", {
   id: int("id").autoincrement().primaryKey(),

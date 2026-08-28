@@ -1,4 +1,4 @@
-import { and, desc, eq, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
 import {
   companies,
   contacts,
@@ -436,10 +436,18 @@ export async function runWeeklyResearch(taskUid: string, payload: WeeklyResearch
 
 export async function notifyDueOpportunities(taskUid: string) {
   const db = await requireDb();
-  const setting = (await db.select().from(monitorSettings).where(and(eq(monitorSettings.scheduleCronTaskUid, taskUid), eq(monitorSettings.scheduleEnabled, 1))).limit(1))[0];
+  const setting = await listMonitorSettings();
   if (!setting) return { ok: true, skipped: "schedule_not_configured" as const };
+  if (!setting.scheduleEnabled) return { ok: true, skipped: "schedule_disabled" as const };
+  if (setting.scheduleCronTaskUid && setting.scheduleCronTaskUid !== taskUid) return { ok: true, skipped: "different_schedule" as const };
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
   const dueItems = await db.select().from(opportunities).where(lte(opportunities.nextActionDue, new Date()));
   const eligible = dueItems.filter(item => ["critical", "high"].includes(item.priority) && !["won", "lost"].includes(item.stage));
-  for (const opportunity of eligible) await recordPriorityNotification(opportunity, "action_due", `高優先商機已到下一步行動日期：${opportunity.title}`);
-  return { ok: true, notified: eligible.length };
+  let notified = 0;
+  for (const opportunity of eligible) {
+    const alreadySent = (await db.select().from(notificationLogs).where(and(eq(notificationLogs.opportunityId, opportunity.id), eq(notificationLogs.notificationType, "action_due"), gte(notificationLogs.createdAt, today))).limit(1))[0];
+    if (!alreadySent) { await recordPriorityNotification(opportunity, "action_due", `高優先商機已到下一步行動日期：${opportunity.title}`); notified += 1; }
+  }
+  return { ok: true, notified, skippedDuplicates: eligible.length - notified };
 }

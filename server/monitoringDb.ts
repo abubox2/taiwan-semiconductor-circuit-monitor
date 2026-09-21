@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import {
   companies,
+  customNotificationRules,
   contacts,
   contactLogs,
   evidenceSources,
@@ -24,6 +25,7 @@ import type {
   requirementInputSchema,
   sourceInputSchema,
   weeklyResearchPayloadSchema,
+  customNotificationRuleInputSchema,
 } from "./monitoringSchemas";
 import type { z } from "zod";
 import { notifyOwner } from "./_core/notification";
@@ -37,6 +39,7 @@ type ContactInput = z.infer<typeof contactInputSchema>;
 type ContactLogInput = z.infer<typeof contactLogInputSchema>;
 type ReportInput = z.infer<typeof reportInputSchema>;
 type WeeklyResearchPayload = z.infer<typeof weeklyResearchPayloadSchema>;
+type CustomNotificationRuleInput = z.infer<typeof customNotificationRuleInputSchema>;
 
 async function requireDb() {
   const db = await getDb();
@@ -169,6 +172,10 @@ export async function createOpportunity(input: OpportunityInput) {
   if (created && ["critical", "high"].includes(created.priority)) {
     await recordPriorityNotification(created, "priority_created", `新增${created.priority === "critical" ? "關鍵" : "高優先"}商機：${created.title}`);
   }
+  if (created) {
+    await evaluateCustomNotificationRules(created.id, "opportunity_created");
+    await evaluateCustomNotificationRules(created.id, "score_threshold");
+  }
   return created;
 }
 
@@ -187,6 +194,10 @@ export async function updateOpportunity(id: number, input: OpportunityInput) {
   const updated = (await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1))[0];
   if (updated && previous && previous.stage !== updated.stage && ["critical", "high"].includes(updated.priority)) {
     await recordPriorityNotification(updated, "stage_changed", `高優先商機階段變更：${updated.title}`);
+  }
+  if (updated) {
+    if (previous && previous.stage !== updated.stage) await evaluateCustomNotificationRules(updated.id, "stage_changed");
+    await evaluateCustomNotificationRules(updated.id, "score_threshold");
   }
   return updated;
 }
@@ -410,6 +421,91 @@ export async function updateMonitorSettings(input: { recipientName?: string }) {
   return (await db.select().from(monitorSettings).where(eq(monitorSettings.id, id)).limit(1))[0];
 }
 
+export async function listCustomNotificationRules() {
+  const db = await requireDb();
+  return db.select().from(customNotificationRules).orderBy(desc(customNotificationRules.updatedAt));
+}
+
+export async function createCustomNotificationRule(input: CustomNotificationRuleInput) {
+  const db = await requireDb();
+  const result = await db.insert(customNotificationRules).values({
+    ...input,
+    description: emptyToNull(input.description),
+    keywords: emptyToNull(input.keywords),
+    enabled: input.enabled ? 1 : 0,
+    priority: input.priority ?? null,
+    stage: input.stage ?? null,
+    supplyChainStage: input.supplyChainStage ?? null,
+    minScore: input.minScore ?? null,
+    dueWithinHours: input.dueWithinHours ?? null,
+  });
+  return (await db.select().from(customNotificationRules).where(eq(customNotificationRules.id, Number(result[0].insertId))).limit(1))[0];
+}
+
+export async function updateCustomNotificationRule(id: number, input: CustomNotificationRuleInput) {
+  const db = await requireDb();
+  await db.update(customNotificationRules).set({
+    ...input,
+    description: emptyToNull(input.description),
+    keywords: emptyToNull(input.keywords),
+    enabled: input.enabled ? 1 : 0,
+    priority: input.priority ?? null,
+    stage: input.stage ?? null,
+    supplyChainStage: input.supplyChainStage ?? null,
+    minScore: input.minScore ?? null,
+    dueWithinHours: input.dueWithinHours ?? null,
+  }).where(eq(customNotificationRules.id, id));
+  return (await db.select().from(customNotificationRules).where(eq(customNotificationRules.id, id)).limit(1))[0];
+}
+
+export async function deleteCustomNotificationRule(id: number) {
+  const db = await requireDb();
+  await db.delete(customNotificationRules).where(eq(customNotificationRules.id, id));
+  return { ok: true };
+}
+
+type CustomNotificationEvent = "opportunity_created" | "stage_changed" | "score_threshold" | "action_due";
+
+export function customNotificationMatches(rule: typeof customNotificationRules.$inferSelect, opportunity: typeof opportunities.$inferSelect, company: typeof companies.$inferSelect | undefined, event: CustomNotificationEvent, now = new Date()) {
+  if (!rule.enabled || rule.triggerType !== event) return false;
+  if (rule.priority && rule.priority !== opportunity.priority) return false;
+  if (rule.stage && rule.stage !== opportunity.stage) return false;
+  if (rule.supplyChainStage && rule.supplyChainStage !== company?.supplyChainStage) return false;
+  if (rule.minScore !== null && rule.minScore !== undefined && opportunity.score < rule.minScore) return false;
+  if (event === "action_due") {
+    if (!opportunity.nextActionDue) return false;
+    const dueWithinHours = rule.dueWithinHours ?? 24;
+    const diffHours = (opportunity.nextActionDue.getTime() - now.getTime()) / 3600000;
+    if (diffHours > dueWithinHours || diffHours < -1) return false;
+  }
+  const terms = (rule.keywords ?? "").split(",").map(term => term.trim().toLowerCase()).filter(Boolean);
+  if (terms.length) {
+    const haystack = [opportunity.title, opportunity.nextAction, opportunity.serviceHypothesis, opportunity.verificationQuestion, company?.name, company?.subCategory, company?.description].filter(Boolean).join(" ").toLowerCase();
+    if (!terms.some(term => haystack.includes(term))) return false;
+  }
+  if (rule.lastTriggeredAt && now.getTime() - rule.lastTriggeredAt.getTime() < rule.cooldownHours * 3600000) return false;
+  return true;
+}
+
+export async function evaluateCustomNotificationRules(opportunityId: number, event: CustomNotificationEvent, now = new Date()) {
+  const db = await requireDb();
+  const opportunity = (await db.select().from(opportunities).where(eq(opportunities.id, opportunityId)).limit(1))[0];
+  if (!opportunity) return 0;
+  const company = (await db.select().from(companies).where(eq(companies.id, opportunity.companyId)).limit(1))[0];
+  const rules = await db.select().from(customNotificationRules).where(eq(customNotificationRules.enabled, 1));
+  const setting = await listMonitorSettings();
+  const recipientName = setting?.recipientName?.trim() || "專案擁有者";
+  let deliveredCount = 0;
+  for (const rule of rules.filter(candidate => customNotificationMatches(candidate, opportunity, company, event, now))) {
+    const message = `${company?.name || "未對應企業"}｜${opportunity.title}｜${opportunity.nextAction || "請確認下一步行動"}`;
+    const delivered = await notifyOwner({ title: `自訂通知｜${rule.name}`, content: message });
+    await db.insert(notificationLogs).values({ opportunityId, customRuleId: rule.id, notificationType: "custom_rule", recipientName, deliveredAt: delivered ? now : null, status: delivered ? "delivered" : "failed", message });
+    await db.update(customNotificationRules).set({ lastTriggeredAt: now }).where(eq(customNotificationRules.id, rule.id));
+    if (delivered) deliveredCount += 1;
+  }
+  return deliveredCount;
+}
+
 export async function configureMonitorSchedule(taskUid: string, nextRunAt?: Date | null) {
   const db = await requireDb();
   const current = await listMonitorSettings();
@@ -488,7 +584,13 @@ export async function notifyDueOpportunities(taskUid: string) {
   let notified = 0;
   for (const opportunity of eligible) {
     const alreadySent = (await db.select().from(notificationLogs).where(and(eq(notificationLogs.opportunityId, opportunity.id), eq(notificationLogs.notificationType, "action_due"), gte(notificationLogs.createdAt, today))).limit(1))[0];
-    if (!alreadySent) { await recordPriorityNotification(opportunity, "action_due", `高優先商機已到下一步行動日期：${opportunity.title}`); notified += 1; }
+    if (!alreadySent) { await recordPriorityNotification(opportunity, "action_due", `高優先商機已到下一步行動日期：${opportunity.title}`); await evaluateCustomNotificationRules(opportunity.id, "action_due"); notified += 1; }
+  }
+  const customDueRules = await db.select().from(customNotificationRules).where(and(eq(customNotificationRules.enabled, 1), eq(customNotificationRules.triggerType, "action_due")));
+  if (customDueRules.length) {
+    const maxDueHours = Math.max(...customDueRules.map(rule => rule.dueWithinHours ?? 24));
+    const customDueItems = await db.select().from(opportunities).where(lte(opportunities.nextActionDue, new Date(Date.now() + maxDueHours * 3600000)));
+    for (const opportunity of customDueItems.filter(item => !["won", "lost"].includes(item.stage))) await evaluateCustomNotificationRules(opportunity.id, "action_due");
   }
   return { ok: true, notified, skippedDuplicates: eligible.length - notified };
 }

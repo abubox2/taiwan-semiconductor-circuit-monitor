@@ -175,7 +175,8 @@ export const scheduleRuns = mysqlTable("scheduleRuns", {
 export const notificationLogs = mysqlTable("notificationLogs", {
   id: int("id").autoincrement().primaryKey(),
   opportunityId: int("opportunityId").notNull(),
-  notificationType: mysqlEnum("notificationType", ["priority_created", "stage_changed", "action_due"]).notNull(),
+  customRuleId: int("customRuleId"),
+  notificationType: mysqlEnum("notificationType", ["priority_created", "stage_changed", "action_due", "custom_rule"]).notNull(),
   recipientName: varchar("recipientName", { length: 160 }),
   deliveredAt: timestamp("deliveredAt"),
   status: mysqlEnum("status", ["pending", "delivered", "failed"]).default("pending").notNull(),
@@ -183,6 +184,26 @@ export const notificationLogs = mysqlTable("notificationLogs", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [index("notification_opportunity_idx").on(table.opportunityId)]);
 
+export const customNotificationRules = mysqlTable("customNotificationRules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  description: text("description"),
+  keywords: text("keywords"),
+  triggerType: mysqlEnum("triggerType", ["opportunity_created", "stage_changed", "score_threshold", "action_due"]).notNull(),
+  enabled: int("enabled").default(1).notNull(),
+  priority: mysqlEnum("priority", ["critical", "high", "medium", "low"]),
+  stage: mysqlEnum("stage", ["discovery", "qualified", "solution", "proposal", "negotiation", "won", "lost"]),
+  supplyChainStage: mysqlEnum("supplyChainStage", ["upstream", "midstream", "downstream"]),
+  minScore: int("minScore"),
+  dueWithinHours: int("dueWithinHours"),
+  cooldownHours: int("cooldownHours").default(24).notNull(),
+  lastTriggeredAt: timestamp("lastTriggeredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [index("custom_notification_rules_enabled_idx").on(table.enabled), index("custom_notification_rules_trigger_idx").on(table.triggerType)]);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type CustomNotificationRule = typeof customNotificationRules.$inferSelect;
+export type InsertCustomNotificationRule = typeof customNotificationRules.$inferInsert;
 export type Company = typeof companies.$inferSelect;

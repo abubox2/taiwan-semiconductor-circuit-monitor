@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
 const mockedDb = vi.hoisted(() => ({
-  getDashboardSnapshot: vi.fn(), getMapLocations: vi.fn(), listCompanies: vi.fn(), createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(),
+  getDashboardSnapshot: vi.fn(), getMapLocations: vi.fn(), listCompanies: vi.fn(), createCompany: vi.fn(), updateCompany: vi.fn(), createFacility: vi.fn(), updateFacility: vi.fn(), createRequirement: vi.fn(), updateRequirement: vi.fn(), createOpportunity: vi.fn(), updateOpportunity: vi.fn(), createSource: vi.fn(), updateSource: vi.fn(), createContact: vi.fn(), updateContact: vi.fn(), createContactLog: vi.fn(), updateContactLog: vi.fn(), createReport: vi.fn(), updateReport: vi.fn(), geocodeFacility: vi.fn(), listCustomNotificationRules: vi.fn(), createCustomNotificationRule: vi.fn(), updateCustomNotificationRule: vi.fn(), deleteCustomNotificationRule: vi.fn(),
 }));
 
 vi.mock("./monitoringDb", () => mockedDb);
@@ -79,5 +79,16 @@ describe("monitor router", () => {
     mockedDb.getMapLocations.mockResolvedValueOnce(locations);
     await expect(appRouter.createCaller(context()).monitor.mapLocations()).resolves.toEqual(locations);
     expect(mockedDb.getMapLocations).toHaveBeenCalledOnce();
+  });
+
+  it("將自訂通知規則的建立、更新與刪除轉交資料服務", async () => {
+    const monitor = appRouter.createCaller(context()).monitor;
+    const rule = { name: "AI 地端商機", triggerType: "score_threshold" as const, enabled: true, keywords: "企業地端 AI", priority: "high" as const, stage: null, supplyChainStage: "downstream" as const, minScore: 80, dueWithinHours: null, cooldownHours: 24 };
+    await monitor.createCustomNotificationRule(rule);
+    await monitor.updateCustomNotificationRule({ id: 2, data: rule });
+    await monitor.deleteCustomNotificationRule({ id: 2 });
+    expect(mockedDb.createCustomNotificationRule).toHaveBeenCalledWith(rule);
+    expect(mockedDb.updateCustomNotificationRule).toHaveBeenCalledWith(2, rule);
+    expect(mockedDb.deleteCustomNotificationRule).toHaveBeenCalledWith(2);
   });
 });

@@ -3,6 +3,8 @@ import { z } from "zod";
 export const supplyChainStages = ["upstream", "midstream", "downstream"] as const;
 export const priorities = ["critical", "high", "medium", "low"] as const;
 export const opportunityStages = ["discovery", "qualified", "solution", "proposal", "negotiation", "won", "lost"] as const;
+export const customNotificationTriggerTypes = ["opportunity_created", "stage_changed", "score_threshold", "action_due"] as const;
+export const fixedNotificationKeywords = ["自用資料中心", "舊廠改建", "AI Data Platform", "企業地端 AI"] as const;
 
 const optionalText = (max = 1000) => z.string().trim().max(max).optional().transform(value => value || undefined);
 
@@ -68,6 +70,20 @@ export const sourceInputSchema = z.object({
   url: z.string().url().max(1000),
   publishedAt: z.coerce.date().nullable().optional(),
   excerpt: optionalText(5000),
+});
+
+export const customNotificationRuleInputSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  description: optionalText(1000),
+  keywords: optionalText(500),
+  triggerType: z.enum(customNotificationTriggerTypes),
+  enabled: z.boolean(),
+  priority: z.enum(priorities).nullable().optional(),
+  stage: z.enum(opportunityStages).nullable().optional(),
+  supplyChainStage: z.enum(supplyChainStages).nullable().optional(),
+  minScore: z.number().int().min(0).max(100).nullable().optional(),
+  dueWithinHours: z.number().int().min(1).max(720).nullable().optional(),
+  cooldownHours: z.number().int().min(1).max(720),
 });
 
 export const contactInputSchema = z.object({

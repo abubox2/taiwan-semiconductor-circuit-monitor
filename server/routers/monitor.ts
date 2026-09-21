@@ -10,6 +10,7 @@ import {
   reportInputSchema,
   requirementInputSchema,
   sourceInputSchema,
+  customNotificationRuleInputSchema,
 } from "../monitoringSchemas";
 
 const optionalFilterText = z.string().trim().max(120).optional();
@@ -44,4 +45,8 @@ export const monitorRouter = router({
   monitorSettings: protectedProcedure.query(() => db.listMonitorSettings()),
   scheduleRuns: protectedProcedure.query(() => db.listScheduleRuns()),
   updateMonitorSettings: protectedProcedure.input(z.object({ recipientName: z.string().trim().max(160).optional() })).mutation(({ input }) => db.updateMonitorSettings(input)),
+  listCustomNotificationRules: protectedProcedure.query(() => db.listCustomNotificationRules()),
+  createCustomNotificationRule: protectedProcedure.input(customNotificationRuleInputSchema).mutation(({ input }) => db.createCustomNotificationRule(input)),
+  updateCustomNotificationRule: protectedProcedure.input(z.object({ id: z.number().int().positive(), data: customNotificationRuleInputSchema })).mutation(({ input }) => db.updateCustomNotificationRule(input.id, input.data)),
+  deleteCustomNotificationRule: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => db.deleteCustomNotificationRule(input.id)),
 });
